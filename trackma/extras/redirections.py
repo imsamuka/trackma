@@ -32,6 +32,13 @@ def parse_anime_relations(filename, api, last=None):
     """
     (src_grp, dst_grp) = (SUPPORTED_APIS.index(api) + 1, SUPPORTED_APIS.index(api) + 6)
 
+    def log(*args, **kwargs):
+        print("[redirections.py]", *args, **kwargs)
+
+    def get_eps(m, i):
+        return (int(m.group(i)),
+                int((m.group(i + 1) or m.group(i)).replace("?", "-1")))
+
     with open(filename) as f:
         import re
 
@@ -41,8 +48,9 @@ def parse_anime_relations(filename, api, last=None):
         ep_pattern = r"(\d+)-?(\d+|\?)?"
         full = r'- {0}:{1} -> {0}:{1}(!)?'.format(id_pattern, ep_pattern)
         _re = re.compile(full)
+        del id_pattern, ep_pattern, full
 
-        mode = 0
+        rules_mode = False
 
         for line in f:
             line = line.strip()
@@ -52,63 +60,59 @@ def parse_anime_relations(filename, api, last=None):
             if line[0] == '#':
                 continue
 
-            if mode == 0 and line == "::meta":
-                mode = 1
-            elif mode == 1:
-                if line[:16] == "- last_modified:":
-                    last_modified = line[17:]
+            if not rules_mode:
 
-                    # TODO : Stop if the file hasn't changed
-                    if last and last == last_modified:
+                if line == "::rules":
+                    rules_mode = True
+                    continue
+
+                if line.startswith("::"):
+                    continue
+
+                m = re.match("- *(\S+): *(\S+)", line)
+
+                if not m:
+                    log("Not recognized: " + line)
+                    continue
+
+                prop, value = m.groups()
+                relations['meta'][prop] = value
+
+                if prop == "version" and not value.startswith("1.3"):
+                    # If the version is different, maybe we can't handle it
+                    log("anime-relations.txt version is not 1.3.x",
+                          " - some errors can happen")
+
+                elif prop == "last_modified" and isinstance(last, str):
+                    # "YYYY-MM-DD" can be compared directly
+                    if value <= last:
                         return None
+                continue
 
-                    relations['meta']['last_modified'] = last_modified
-                elif line == "::rules":
-                    mode = 2
-            elif mode == 2 and line[0] == '-':
-                m = _re.match(line)
-                if m:
-                    # Source
-                    src_id = m.group(src_grp)
+            # Rules Mode
 
-                    # Handle unknown IDs
-                    if src_id == '?':
-                        continue
-                    else:
-                        src_id = int(src_id)
+            m = _re.match(line)
 
-                    # Handle infinite ranges
-                    if m.group(5) == '?':
-                        src_eps = (int(m.group(4)), -1)
-                    else:
-                        src_eps = (int(m.group(4)), int(
-                            m.group(5) or m.group(4)))
+            if not m:
+                log("Not recognized: " + line)
+                continue
 
-                    # Destination
-                    dst_id = m.group(dst_grp)
+            # Source
+            src_id = int(m.group(src_grp).replace("?", "-1"))
+            if src_id == -1: continue
+            src_eps = get_eps(m, 4)
 
-                    # Handle ID repeaters
-                    if dst_id == '~':
-                        dst_id = src_id
-                    else:
-                        dst_id = int(dst_id)
+            # Destination
+            dst_id = int(m.group(dst_grp).replace("~", str(src_id)))
+            dst_eps = get_eps(m, 9)
 
-                    # Handle infinite ranges
-                    if m.group(10) == '?':
-                        dst_eps = (int(m.group(9)), -1)
-                    else:
-                        dst_eps = (int(m.group(9)), int(
-                            m.group(10) or m.group(9)))
+            # Save relation
+            relations.setdefault(src_id, []) # type: ignore
+            relations[src_id].append((src_eps, dst_id, dst_eps)) # type: ignore
 
-                    if src_id not in relations:
-                        relations[src_id] = []
-                    relations[src_id].append((src_eps, dst_id, dst_eps))
-                    # Handle self-redirecting rules
-                    if m.group(11) == '!':
-                        if dst_id not in relations:
-                            relations[dst_id] = []
-                        relations[dst_id].append((src_eps, dst_id, dst_eps))
-                else:
-                    print("Not recognized. " + line)
+            # Handle self-redirecting rules
+            if m.group(11) == '!':
+                relations.setdefault(dst_id, [])
+                relations[dst_id].append((src_eps, dst_id, dst_eps))
 
         return relations

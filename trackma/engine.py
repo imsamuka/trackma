@@ -757,13 +757,6 @@ class Engine:
         library = {}
         library_cache = self.data_handler.library_cache_get()
 
-        if not my_status:
-            if self.config['scan_whole_list']:
-                my_status = self.mediainfo['statuses']
-            else:
-                my_status = self.mediainfo.get(
-                    'statuses_library', self.mediainfo['statuses_start'])
-
         if rescan:
             self.msg.info("Scanning local library (overriding cache)...")
         else:

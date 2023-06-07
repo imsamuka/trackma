@@ -373,20 +373,6 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="checkbox_library_entire_list">
-                                <property name="label" translatable="yes">Search entire list</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">False</property>
-                                <property name="draw_indicator">True</property>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                            <child>
                               <object class="GtkCheckButton" id="checkbox_library_full_path">
                                 <property name="label" translatable="yes">Check subdirectory name when searching</property>
                                 <property name="visible">True</property>

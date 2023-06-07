@@ -55,7 +55,6 @@ class SettingsWindow(Gtk.Window):
     listbox_directories = Gtk.Template.Child()
     btn_add_directory = Gtk.Template.Child()
     checkbox_library_startup = Gtk.Template.Child()
-    checkbox_library_entire_list = Gtk.Template.Child()
     checkbox_library_full_path = Gtk.Template.Child()
 
     radio_tracker_plex = Gtk.Template.Child()
@@ -175,8 +174,6 @@ class SettingsWindow(Gtk.Window):
             self.engine.get_config('player'))
         self.checkbox_library_startup.set_active(
             self.engine.get_config('library_autoscan'))
-        self.checkbox_library_entire_list.set_active(
-            self.engine.get_config('scan_whole_list'))
         self.checkbox_library_full_path.set_active(
             self.engine.get_config('library_full_path'))
         self._load_directories(self.engine.get_config('searchdir'))
@@ -321,7 +318,6 @@ class SettingsWindow(Gtk.Window):
         self.entry_player_process.set_sensitive(enable)
         self.btn_file_chooser_executable.set_sensitive(enable)
         self.checkbox_library_startup.set_sensitive(enable)
-        self.checkbox_library_entire_list.set_sensitive(enable)
         self.checkbox_library_full_path.set_sensitive(enable)
 
     def _enable_plex(self, enable):
@@ -372,8 +368,6 @@ class SettingsWindow(Gtk.Window):
             'tracker_process', self.entry_player_process.get_text())
         self.engine.set_config('library_autoscan',
                                self.checkbox_library_startup.get_active())
-        self.engine.set_config('scan_whole_list',
-                               self.checkbox_library_entire_list.get_active())
         self.engine.set_config('library_full_path',
                                self.checkbox_library_full_path.get_active())
         self.engine.set_config('plex_host', self.entry_plex_host.get_text())

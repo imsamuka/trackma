@@ -216,7 +216,6 @@ class SettingsDialog(QDialog):
         self.searchdirs_buttons.addWidget(self.searchdirs_remove)
         self.searchdirs_buttons.addWidget(QSplitter())
         self.library_autoscan = QCheckBox()
-        self.scan_whole_list = QCheckBox()
         self.library_full_path = QCheckBox()
 
         g_playnext_layout = QGridLayout()
@@ -238,8 +237,6 @@ class SettingsDialog(QDialog):
             self.library_autoscan,               2, 2, 1, 1)
         g_playnext_layout.addWidget(
             QLabel('Scan through whole list'),   3, 0, 1, 2)
-        g_playnext_layout.addWidget(
-            self.scan_whole_list,                3, 2, 1, 1)
         g_playnext_layout.addWidget(
             QLabel('Take subdirectory name into account'), 4, 0, 1, 2)
         g_playnext_layout.addWidget(
@@ -508,7 +505,6 @@ class SettingsDialog(QDialog):
 
         self.player.setText(engine.get_config('player'))
         self.library_autoscan.setChecked(engine.get_config('library_autoscan'))
-        self.scan_whole_list.setChecked(engine.get_config('scan_whole_list'))
         self.library_full_path.setChecked(
             engine.get_config('library_full_path'))
 
@@ -617,7 +613,6 @@ class SettingsDialog(QDialog):
         engine.set_config('player',            self.player.text())
         engine.set_config('library_autoscan',
                           self.library_autoscan.isChecked())
-        engine.set_config('scan_whole_list', self.scan_whole_list.isChecked())
         engine.set_config('library_full_path',
                           self.library_full_path.isChecked())
 

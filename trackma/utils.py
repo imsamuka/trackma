@@ -16,8 +16,9 @@
 
 import copy
 import datetime
-import difflib
 import json
+import itertools
+import operator
 import os
 import pickle
 import re
@@ -29,6 +30,8 @@ import urllib.error
 import urllib.request
 import uuid
 from enum import Enum, auto
+
+import rapidfuzz
 
 VERSION = '0.8.5'
 
@@ -383,31 +386,35 @@ def guess_show(show_title, tracker_list):
     (showlist, altnames_map) = tracker_list
 
     # Return the show immediately if we find an altname for it
-    if altnames_map and show_title.lower() in altnames_map:
-        showid = altnames_map[show_title.lower()]
+    if altnames_map:
+        showid = altnames_map.get(show_title.lower())
+        if showid is not None:
+            show = showlist.get(showid)
+            if show is not None:
+                return show
 
-        if showid in showlist:
-            return showlist[showid]
+    # iterable of every alias of every show
+    choices = itertools.chain.from_iterable(
+        map(operator.itemgetter("titles"), showlist.values()))
 
-    # Use difflib to see if the show title is similar to
-    # one we have in the list
-    highest_ratio = (None, 0)
-    matcher = difflib.SequenceMatcher()
-    matcher.set_seq1(show_title.lower())
+    match = rapidfuzz.process.extractOne(
+        show_title, choices,
+        processor=lambda s: s.casefold(),
+        scorer=rapidfuzz.fuzz.ratio,
+        score_cutoff=70.0,
+    )
+    if match is None:
+        return
 
-    # Compare to every show in our list to see which one
-    # has the most similar name
-    for item in showlist.values():
-        # Make sure to search through all the aliases
-        for title in item['titles']:
-            matcher.set_seq2(title.lower())
-            ratio = matcher.ratio()
-            if ratio > highest_ratio[1]:
-                highest_ratio = (item, ratio)
+    # 'match' structure:
+    # (best_str, ratio, index) = match
+    # best_str == choices[index]
 
-    playing_show = highest_ratio[0]
-    if highest_ratio[1] > 0.7:
-        return playing_show
+    index = match[2]
+    for show in showlist.values():
+        index -= len(show['titles'])
+        if index < 0:
+            return show
 
 
 def redirect_show(show_tuple, redirections, tracker_list):
